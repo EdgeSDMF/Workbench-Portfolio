@@ -1,0 +1,20 @@
+{
+  "name": "routing-workbench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"node --watch server/index.js\" \"vite --host 127.0.0.1\"",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "test": "node --test server/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "vite": "^6.0.5",
+    "concurrently": "^9.1.2"
+  }
+}
