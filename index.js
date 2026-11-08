@@ -1,0 +1,16 @@
+import express from 'express';
+import { mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { createStore } from './store.js';
+mkdirSync('data',{recursive:true});
+const store=createStore(process.env.DB_PATH||'data/workbench.sqlite');store.seed();
+const app=express();app.use(express.json({limit:'16kb'}));
+app.get('/api/state',(_req,res)=>res.json(store.snapshot()));
+app.post('/api/tasks',(req,res,next)=>{try{const id=store.create(req.body);res.status(201).json({id});}catch(e){next(e);}});
+app.post('/api/tasks/:id/:action',(req,res,next)=>{try{const {id,action}=req.params;const b=req.body;if(action==='route')store.route(id,b.mode);else if(action==='manual')store.manual(id,b.contributorId);else if(action==='respond')store.respond(id,b.assignmentId,b.outcome,b.reason);else return res.status(404).json({error:'Unknown action'});res.json({ok:true});}catch(e){next(e);}});
+app.use('/api',(_req,res)=>res.status(404).json({error:'Not found'}));
+app.use(express.static(resolve('dist')));app.get('*',(_req,res)=>res.sendFile(resolve('dist/index.html')));
+app.use((err,_req,res,_next)=>res.status(400).json({error:err.message}));
+store.tick();const timer=setInterval(()=>{try{store.tick();}catch(e){console.error('Worker failed',e);}},250);
+const server=app.listen(3001,'127.0.0.1',()=>console.log('Workbench API: http://127.0.0.1:3001'));
+function shutdown(){clearInterval(timer);server.close(()=>{store.close();process.exit(0);});}process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);
